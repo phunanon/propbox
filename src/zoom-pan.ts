@@ -1,31 +1,39 @@
-import { Bounds, Mouse, Vector } from "matter-js";
-import { RenderContext } from "./types";
+import { Bounds, Mouse, Vector } from 'matter-js';
+import { RenderContext } from './types';
 
-
-export const HandleZoom = ({ mouseConstraint, scale, render }: RenderContext) => {
+export const HandleZoom = ({
+  mouseConstraint,
+  scale,
+  render,
+}: RenderContext) => {
   const { mouse } = mouseConstraint;
   const width = render.options.width ?? 0;
   const height = render.options.height ?? 0;
 
   if (mouse.wheelDelta) {
-    const scaleFactor = mouse.wheelDelta * -0.05 * scale.by;
+    const scaleFactor = mouse.wheelDelta * -0.02 * scale.by;
     scale.target = Math.min(
       Math.max(scale.target + scaleFactor, scale.min),
       scale.max
     );
+    const now = new Date().getTime();
+    if (now > scale.lastImpulse + 100) {
+      scale.targetPos = Vector.clone(mouse.absolute);
+    }
+    scale.lastImpulse = now;
   }
 
-  if (Math.abs(scale.by - scale.target) < 0.01) return;
+  if (Math.abs(scale.by - scale.target) < .01) return;
 
   //smooth zooming
-  const scaleFactor = (scale.target - scale.by) * 0.05;
+  const scaleFactor = (scale.target - scale.by) * .1;
   scale.by += scaleFactor;
 
   render.bounds.max.x = render.bounds.min.x + width * scale.by;
   render.bounds.max.y = render.bounds.min.y + height * scale.by;
   const translate = {
-    x: mouse.absolute.x * -scaleFactor,
-    y: mouse.absolute.y * -scaleFactor,
+    x: scale.targetPos.x * -scaleFactor,
+    y: scale.targetPos.y * -scaleFactor,
   };
 
   Bounds.translate(render.bounds, translate);

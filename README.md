@@ -6,9 +6,9 @@ Features so far (adding upon the [Matter.js](https://brm.io/matter-js/) engine):
 - zooming and panning
 - autosave
 - dragging
+- play/pause
 
 Planned features:
-- play/pause
 - right-click menu
 - save/load/import/export
 - clouds

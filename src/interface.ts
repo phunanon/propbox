@@ -22,11 +22,11 @@ export const Interface = (canvas: HTMLCanvasElement) => {
 
   Render.run(render);
 
-  const mouse = Mouse.create(render.canvas),
-    mouseConstraint = MouseConstraint.create(engine, {
-      mouse: mouse,
-      constraint: { render: { visible: false } },
-    });
+  const mouse = Mouse.create(render.canvas);
+  const mouseConstraint = MouseConstraint.create(engine, {
+    mouse: mouse,
+    constraint: { render: { visible: false } },
+  });
 
   Composite.add(world, mouseConstraint);
 
@@ -49,7 +49,7 @@ export const Interface = (canvas: HTMLCanvasElement) => {
               y,
               Common.random(20, 50),
               Common.random(20, 50),
-              { render: { lineWidth: 2, strokeStyle: '#aaa' }, slop: .1 }
+              { render: { lineWidth: 2, strokeStyle: '#aaa' } }
             );
           } else {
             return Bodies.rectangle(
@@ -83,7 +83,14 @@ export const Interface = (canvas: HTMLCanvasElement) => {
 
   const context: RenderContext = {
     render,
-    scale: { min: 0.1, max: 10, by: 1, target: 1 },
+    scale: {
+      min: 0.1,
+      max: 10,
+      by: 1,
+      target: 1,
+      lastImpulse: new Date().getTime(),
+      targetPos: { x: 0, y: 0 },
+    },
     mouseConstraint,
   };
 
@@ -104,6 +111,13 @@ export const Interface = (canvas: HTMLCanvasElement) => {
       render.options.height = h;
       render.bounds.max.x = render.bounds.min.x + w * render.mouse.scale.x;
       render.bounds.max.y = render.bounds.min.y + h * render.mouse.scale.y;
+    },
+    HandlePlayToggle: () => {
+      if (runner.enabled) {
+        runner.enabled = false;
+      } else {
+        runner.enabled = true;
+      }
     },
   };
 };

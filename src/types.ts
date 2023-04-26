@@ -6,6 +6,8 @@ export type RenderContext = {
   scale: {
     by: number;
     target: number;
+    lastImpulse: number;
+    targetPos: Vector;
     readonly min: number;
     readonly max: number;
   };
