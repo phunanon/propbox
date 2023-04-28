@@ -1,7 +1,17 @@
-import { MouseConstraint, Render, Vector } from 'matter-js';
+import { MouseConstraint, Render, Runner, Vector } from 'matter-js';
+
+type ToolKind = 'move' | 'drag';
+type ControlKind =
+  | 'close'
+  | 'pin'
+  | 'posPin'
+  | 'toolbox'
+  | 'pauseResume'
+  | ToolKind;
 
 export type Context = {
   render: Render;
+  runner: Runner;
   mouseConstraint: MouseConstraint;
   scale: {
     by: number;
@@ -17,6 +27,7 @@ export type Context = {
   panningFrom?: Vector;
   menuOpenedWhen?: number;
   menus: Menu[];
+  tool: ToolKind;
 };
 
 export type Menu = {
@@ -27,7 +38,6 @@ export type Menu = {
   controls: MenuControl[];
 };
 
-type ControlKind = 'close' | 'pin' | 'posPin' | 'toolbox' | 'move' | 'drag';
 export type MenuControl = {
   /** xy on a gapped grid, wh in 1:2 intervals */
   box: Box;
@@ -38,6 +48,7 @@ export type MenuControl = {
   readonly keepMenuOpen?: boolean;
   onClick: (ctx: Context, menu: Menu, self: MenuControl) => void | 'close';
   hidden?: (ctx: Context, menu: Menu) => boolean;
+  highlighted?: (ctx: Context) => boolean;
 };
 
 export type Box = {

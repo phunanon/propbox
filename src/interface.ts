@@ -1,11 +1,11 @@
-import { Engine, Runner, Mouse, Common, Vector } from 'matter-js';
+import { Engine, Runner, Mouse, Common, Vector, Body } from 'matter-js';
 import { Bodies, Composite, MouseConstraint, Composites } from 'matter-js';
 import { Events } from 'matter-js';
 import { Context } from './types';
 import { HandlePan, HandleZoom } from './zoom-pan';
 import { load, save } from './load-save';
 import { Render } from './render';
-import { HandleMenu } from './context-menu';
+import { HandleMenu, OpenToolboxMenu } from './context-menu';
 
 export const Interface = (canvas: HTMLCanvasElement) => {
   const engine = Engine.create(); //load() ?? Engine.create();
@@ -25,7 +25,7 @@ export const Interface = (canvas: HTMLCanvasElement) => {
 
   const mouse = Mouse.create(render.canvas);
   const mouseConstraint = MouseConstraint.create(engine, {
-    mouse: mouse,
+    mouse,
     constraint: { render: { visible: false } },
   });
 
@@ -82,8 +82,11 @@ export const Interface = (canvas: HTMLCanvasElement) => {
     Bodies.rectangle(0, 300, 50, 600, { isStatic: true }),
   ]);
 
-  const context: Context = {
-    render,
+  Render.run(render);
+  const runner = Runner.create();
+  Runner.run(runner, engine);
+
+  const ctx: Context = {
     scale: {
       min: 0.1,
       max: 10,
@@ -92,16 +95,12 @@ export const Interface = (canvas: HTMLCanvasElement) => {
       lastImpulse: new Date().getTime(),
       targetPos: { x: 0, y: 0 },
     },
-    mouseConstraint,
-    menus: [],
+    ...{ render, runner, mouseConstraint, menus: [], tool: 'drag' },
   };
 
-  Events.on(render, 'beforeRender', BeforeRender(context));
-  Events.on(render, 'afterRender', AfterRender(context));
-
-  Render.run(render);
-  const runner = Runner.create();
-  Runner.run(runner, engine);
+  OpenToolboxMenu(ctx);
+  Events.on(render, 'beforeRender', BeforeRender(ctx));
+  Events.on(render, 'afterRender', AfterRender(ctx));
 
   //Autosave
   setInterval(() => save(engine), 10_000);

@@ -68,14 +68,14 @@ const HandleMenuClick = (ctx: Context) => {
     const menu = menus[m]!;
     const menuDim = ScaledMenuDimensions(ctx, menu);
     const { x, y } = MenuPosition(ctx, menu);
-    const clicked =
+    const inBounds =
       absolute.x > x &&
       absolute.x < x + menuDim.width &&
       absolute.y > y &&
       absolute.y < y + menuDim.height;
-    if (!clicked) continue;
+    if (!inBounds) continue;
     const controls = visibleControls(menu, ctx);
-    const clickedControl = controls.find(control => {
+    const clicked = controls.find(control => {
       const contDim = ControlBounds(ctx, menu, control, menuDim.scale);
       return (
         absolute.x > x + contDim.x &&
@@ -84,10 +84,11 @@ const HandleMenuClick = (ctx: Context) => {
         absolute.y < y + contDim.y + contDim.height
       );
     });
-    if (!clickedControl) continue;
-    const action = clickedControl.onClick(ctx, menu, clickedControl);
+    if (!clicked) continue;
+    console.log(clicked.kind);
+    const action = clicked.onClick(ctx, menu, clicked);
     const pinned = isPinned(menu);
-    if ((!pinned && !clickedControl.keepMenuOpen) || action === 'close') {
+    if ((!pinned && !clicked.keepMenuOpen) || action === 'close') {
       menus.splice(m, 1);
     }
     return true;
@@ -152,7 +153,9 @@ const DrawMenus = (context: Context, ctx: CanvasRenderingContext2D) => {
     menu.controls.forEach(control => {
       if (control.hidden?.(context, menu)) return;
       const box = ControlBounds(context, menu, control);
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+      ctx.fillStyle = !control.highlighted?.(context)
+        ? 'rgba(0, 0, 0, 0.25)'
+        : 'rgba(127, 255, 127, 0.5)';
       const stretch = doStretchControl(visibleControls(menu, context), control);
       ctx.fillRect(
         box.x + 2,
@@ -200,78 +203,98 @@ const ControlBounds = (
 };
 
 /** Closes menu */
-const MenuCloseControl = (): MenuControl => {
-  return {
-    type: 'button',
-    kind: 'close',
-    icon: '\uf00d',
-    box: { x: 0, y: 0, width: 2, height: 1 },
-    keepMenuOpen: true,
-    onClick: (ctx, menu) => {
-      console.log('close');
-      delete menu.pinnedScale;
-      delete menu.pinnedPos;
-      return 'close';
-    },
-  };
-};
+const MenuCloseControl = (): MenuControl => ({
+  type: 'button',
+  kind: 'close',
+  icon: '\uf00d',
+  box: { x: 0, y: 0, width: 2, height: 1 },
+  keepMenuOpen: true,
+  onClick: (ctx, menu) => {
+    delete menu.pinnedScale;
+    delete menu.pinnedPos;
+    return 'close';
+  },
+});
 
 /** Pins a menu both in scale and position */
-const PinControl = (xy: Vector): MenuControl => {
-  return {
-    type: 'button',
-    kind: 'pin',
-    label: 'here',
-    icon: '\uf08d',
-    box: { x: xy.x, y: xy.y, width: 5, height: 1 },
-    keepMenuOpen: true,
-    onClick: (ctx, menu) => {
-      menu.pinnedScale = ctx.scale.by;
-      //Convert absolute position to relative position
-      menu.position = Vector.add(
-        Vector.mult(menu.position, menu.pinnedScale),
-        ctx.render.bounds.min
-      );
-      menu.controls.unshift(MenuCloseControl());
-    },
-    hidden: (ctx, menu) => !!menu.controls.find(c => c.kind === 'close'),
-  };
-};
+const PinControl = (xy: Vector): MenuControl => ({
+  type: 'button',
+  kind: 'pin',
+  label: 'here',
+  icon: '\uf08d',
+  box: { x: xy.x, y: xy.y, width: 5, height: 1 },
+  keepMenuOpen: true,
+  onClick: (ctx, menu) => {
+    menu.pinnedScale = ctx.scale.by;
+    //Convert absolute position to relative position
+    menu.position = Vector.add(
+      Vector.mult(menu.position, menu.pinnedScale),
+      ctx.render.bounds.min
+    );
+    menu.controls.unshift(MenuCloseControl());
+  },
+  hidden: (ctx, menu) => !!menu.controls.find(c => c.kind === 'close'),
+});
 
 /** Pins a menu in position only */
-const PosPinControl = (xy: Vector): MenuControl => {
-  return {
-    type: 'button',
-    kind: 'posPin',
-    label: 'open',
-    icon: '\uf08d',
-    box: { x: xy.x, y: xy.y, width: 5, height: 1 },
-    keepMenuOpen: true,
-    onClick: (ctx, menu) => {
-      menu.pinnedScale = undefined;
-      menu.pinnedPos = true;
-      menu.controls.unshift(MenuCloseControl());
-    },
-    hidden: (ctx, menu) => !!menu.controls.find(c => c.kind === 'close'),
-  };
-};
+const PosPinControl = (xy: Vector): MenuControl => ({
+  type: 'button',
+  kind: 'posPin',
+  label: 'open',
+  icon: '\uf08d',
+  box: { x: xy.x, y: xy.y, width: 5, height: 1 },
+  keepMenuOpen: true,
+  onClick: (ctx, menu) => {
+    menu.pinnedScale = undefined;
+    menu.pinnedPos = true;
+    menu.controls.unshift(MenuCloseControl());
+  },
+  hidden: (ctx, menu) => !!menu.controls.find(c => c.kind === 'close'),
+});
 
-const ToolboxControl = (xy: Vector): MenuControl => {
-  return {
-    type: 'button',
-    kind: 'toolbox',
-    label: 'toolbox',
-    icon: '\uf0ad',
-    box: { x: xy.x, y: xy.y, width: 6, height: 1 },
-    onClick: ctx => {
-      const menu = OpenMenu('toolbox', Vector.create(), ctx, ToolboxControls);
-      menu.pinnedPos = true;
-    },
-    hidden: ctx => {
-      return !!ctx.menus.find(m => m.name === 'toolbox');
-    },
-  };
-};
+const ToolboxControl = (xy: Vector): MenuControl => ({
+  type: 'button',
+  kind: 'toolbox',
+  label: 'toolbox',
+  icon: '\uf0ad',
+  box: { x: xy.x, y: xy.y, width: 6, height: 1 },
+  onClick: ctx => OpenToolboxMenu(ctx),
+  hidden: ctx => !!ctx.menus.find(m => m.name === 'toolbox'),
+});
+
+const MoveControl = (xy: Vector): MenuControl => ({
+  type: 'button',
+  kind: 'move',
+  icon: '\uf0b2',
+  box: { x: xy.x, y: xy.y, width: 2, height: 1 },
+  onClick: ctx => {
+    ctx.tool = 'move';
+  },
+  highlighted: ctx => ctx.tool === 'move',
+});
+
+const DragControl = (xy: Vector): MenuControl => ({
+  type: 'button',
+  kind: 'drag',
+  icon: '\uf25a',
+  box: { x: xy.x, y: xy.y, width: 2, height: 1 },
+  onClick: ctx => {
+    ctx.tool = 'drag';
+  },
+  highlighted: ctx => ctx.tool === 'drag',
+});
+
+const PauseResumeControl = (xy: Vector): MenuControl => ({
+  type: 'button',
+  kind: 'pauseResume',
+  icon: '\uf04c',
+  box: { x: xy.x, y: xy.y, width: 2, height: 1 },
+  onClick: (ctx, menu, self) => {
+    ctx.runner.enabled = !ctx.runner.enabled;
+    self.icon = ctx.runner.enabled ? '\uf04c' : '\uf04b';
+  },
+  highlighted: ctx => !ctx.runner.enabled,
+});
 
 const SceneControls = (): MenuControl[] => [
   PinControl(Vector.create(0, 0)),
@@ -282,25 +305,15 @@ const SceneControls = (): MenuControl[] => [
 
 const ToolboxControls = (): MenuControl[] => [
   MenuCloseControl(),
-  {
-    type: 'button',
-    kind: 'move',
-    icon: '\uf0b2',
-    box: { x: 3, y: 0, width: 2, height: 1 },
-    onClick: menu => {
-      console.log('move');
-    },
-  },
-  {
-    type: 'button',
-    kind: 'drag',
-    icon: '\uf25a',
-    box: { x: 5, y: 0, width: 2, height: 1 },
-    onClick: menu => {
-      console.log('drag');
-    },
-  },
+  MoveControl(Vector.create(3, 0)),
+  DragControl(Vector.create(5, 0)),
+  PauseResumeControl(Vector.create(8, 0)),
 ];
+
+export const OpenToolboxMenu = (ctx: Context) => {
+  const menu = OpenMenu('toolbox', Vector.create(), ctx, ToolboxControls);
+  menu.pinnedPos = true;
+};
 
 const OpenMenu = (
   name: string,
