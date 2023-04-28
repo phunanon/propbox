@@ -9,6 +9,7 @@ Features so far (adding upon the [Matter.js](https://brm.io/matter-js/) engine):
 - play/pause
 
 Planned features:
+- draggable menus
 - tool menu
 - save/load/import/export
 - clouds

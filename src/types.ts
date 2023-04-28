@@ -20,18 +20,24 @@ export type Context = {
 };
 
 export type Menu = {
-  pinnedScale?: number;
+  name: string;
   position: Vector;
+  pinnedScale?: number;
+  pinnedPos?: boolean;
   controls: MenuControl[];
 };
 
+type ControlKind = 'close' | 'pin' | 'posPin' | 'toolbox' | 'move' | 'drag';
 export type MenuControl = {
   /** xy on a gapped grid, wh in 1:2 intervals */
   box: Box;
   type: 'button';
-  label: string;
+  kind: ControlKind;
+  label?: string;
   icon: string;
-  onClick: (menu: Menu) => void;
+  readonly keepMenuOpen?: boolean;
+  onClick: (ctx: Context, menu: Menu, self: MenuControl) => void | 'close';
+  hidden?: (ctx: Context, menu: Menu) => boolean;
 };
 
 export type Box = {
