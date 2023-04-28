@@ -1,11 +1,7 @@
 import { Bounds, Mouse, Vector } from 'matter-js';
-import { RenderContext } from './types';
+import { Context } from './types';
 
-export const HandleZoom = ({
-  mouseConstraint,
-  scale,
-  render,
-}: RenderContext) => {
+export const HandleZoom = ({ mouseConstraint, scale, render }: Context) => {
   const { mouse } = mouseConstraint;
   const width = render.options.width ?? 0;
   const height = render.options.height ?? 0;
@@ -23,10 +19,10 @@ export const HandleZoom = ({
     scale.lastImpulse = now;
   }
 
-  if (Math.abs(scale.by - scale.target) < .01) return;
+  if (Math.abs(scale.by - scale.target) < 0.01) return;
 
   //smooth zooming
-  const scaleFactor = (scale.target - scale.by) * .1;
+  const scaleFactor = (scale.target - scale.by) * 0.1;
   scale.by += scaleFactor;
 
   render.bounds.max.x = render.bounds.min.x + width * scale.by;
@@ -41,12 +37,22 @@ export const HandleZoom = ({
   Mouse.setOffset(mouse, render.bounds.min);
 };
 
-export const HandlePan = (context: RenderContext) => {
-  const { mouseConstraint, render, panningFrom } = context;
-  const { mouse, body } = mouseConstraint;
-  const button = { [-1]: 'none', 0: 'left', 2: 'right' }[mouse.button];
+//FIXME: regression: dragging object (might be best to create a drag tool and fix it then)
+export const HandlePan = (context: Context) => {
+  const { mouseState, mouseConstraint, render, panningFrom, mouseDownAt } =
+    context;
+  const { mouse } = mouseConstraint;
 
-  if (button === 'none' || (body && !body.isStatic)) {
+  if (
+    mouseDownAt &&
+    mouseDownAt.x !== mouse.absolute.x &&
+    mouseDownAt.y !== mouse.absolute.y
+  ) {
+    context.mouseState = 'pan';
+    delete context.mouseDownAt;
+  }
+
+  if (mouseState !== 'pan') {
     delete context.panningFrom;
     return;
   }

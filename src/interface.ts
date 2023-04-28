@@ -1,10 +1,11 @@
-import { Engine, Runner, Mouse, Common } from 'matter-js';
+import { Engine, Runner, Mouse, Common, Vector } from 'matter-js';
 import { Bodies, Composite, MouseConstraint, Composites } from 'matter-js';
 import { Events } from 'matter-js';
-import { RenderContext } from './types';
+import { Context } from './types';
 import { HandlePan, HandleZoom } from './zoom-pan';
 import { load, save } from './load-save';
 import { Render } from './render';
+import { HandleMenu } from './context-menu';
 
 export const Interface = (canvas: HTMLCanvasElement) => {
   const engine = Engine.create(); //load() ?? Engine.create();
@@ -81,7 +82,7 @@ export const Interface = (canvas: HTMLCanvasElement) => {
     Bodies.rectangle(0, 300, 50, 600, { isStatic: true }),
   ]);
 
-  const context: RenderContext = {
+  const context: Context = {
     render,
     scale: {
       min: 0.1,
@@ -92,9 +93,11 @@ export const Interface = (canvas: HTMLCanvasElement) => {
       targetPos: { x: 0, y: 0 },
     },
     mouseConstraint,
+    menus: [],
   };
 
   Events.on(render, 'beforeRender', BeforeRender(context));
+  Events.on(render, 'afterRender', AfterRender(context));
 
   Render.run(render);
   const runner = Runner.create();
@@ -122,7 +125,27 @@ export const Interface = (canvas: HTMLCanvasElement) => {
   };
 };
 
-const BeforeRender = (context: RenderContext) => () => {
+const BeforeRender = (context: Context) => () => {
+  const { mouseState, mouseConstraint } = context;
+  const { mouse, body } = mouseConstraint;
+  const leftClicked = mouse.button === 0;
+  if (!mouseState || mouseState === 'up' || mouseState === 'afterDragOrPan') {
+    if (leftClicked) {
+      context.mouseState = 'undetermined';
+      context.mouseDownAt = Vector.clone(mouse.absolute);
+    }
+  } else {
+    if (mouseState === 'undetermined') {
+      if (body && !body.isStatic) context.mouseState = 'drag';
+      else if (!leftClicked) context.mouseState = 'up';
+    } else if (!leftClicked) {
+      context.mouseState = 'afterDragOrPan';
+    }
+  }
   HandleZoom(context);
   HandlePan(context);
+};
+
+const AfterRender = (context: Context) => () => {
+  HandleMenu(context);
 };

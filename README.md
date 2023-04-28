@@ -9,16 +9,21 @@ Features so far (adding upon the [Matter.js](https://brm.io/matter-js/) engine):
 - play/pause
 
 Planned features:
-- right-click menu
+- tool menu
 - save/load/import/export
 - clouds
 - create shapes
 - select shape/s
 - change fixed physical properties (dimensions, density, etc)
+- resize shapes
 - create fixjoints
 - create hinges
 - create motors
 - create springs
+- move fixjoints
+- move hinges
+- move springs
+- grid
 - improved dragging
 - change dynamic physical properties (position, velocity, etc)
 - change colours
