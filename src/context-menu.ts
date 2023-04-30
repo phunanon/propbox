@@ -1,5 +1,5 @@
 import { Vector } from 'matter-js';
-import { Context, Menu, MenuControl } from './types';
+import { Context, Menu, MenuControl, ToolKind } from './types';
 
 const fontSize = 16;
 const gridY = fontSize * 2;
@@ -39,9 +39,11 @@ export const HandleMenu = (ctx: Context) => {
     }
   };
 
-  if (ctx.mouseState === 'up') {
-    const clicked = HandleMenuClick(ctx);
-    delete ctx.mouseState;
+  //Click a menu or close the leftmost menu
+  let clicked = false;
+  if (ctx.mouseState === 'click') {
+    clicked = HandleMenuClick(ctx);
+    ctx.mouseState = 'rest';
     if (!clicked) closeLeftmost();
   }
 
@@ -59,6 +61,7 @@ export const HandleMenu = (ctx: Context) => {
   if (!ctx2d) return;
 
   DrawMenus(ctx, ctx2d);
+  return clicked;
 };
 
 const HandleMenuClick = (ctx: Context) => {
@@ -264,13 +267,13 @@ const ToolboxControl = (xy: Vector): MenuControl => ({
 
 const MoveControl = (xy: Vector): MenuControl => ({
   type: 'button',
-  kind: 'move',
+  kind: 'pan',
   icon: '\uf0b2',
   box: { x: xy.x, y: xy.y, width: 2, height: 1 },
   onClick: ctx => {
-    ctx.tool = 'move';
+    ctx.tool = 'pan';
   },
-  highlighted: ctx => ctx.tool === 'move',
+  highlighted: ctx => ctx.tool === 'pan',
 });
 
 const DragControl = (xy: Vector): MenuControl => ({
@@ -296,6 +299,17 @@ const PauseResumeControl = (xy: Vector): MenuControl => ({
   highlighted: ctx => !ctx.runner.enabled,
 });
 
+const CreateControl = (xy: Vector, kind: ToolKind): MenuControl => ({
+  type: 'button',
+  kind,
+  icon: kind === 'rectangle' ? '\uf0c8' : '\uf111',
+  box: { x: xy.x, y: xy.y, width: 2, height: 1 },
+  onClick: ctx => {
+    ctx.tool = kind;
+  },
+  highlighted: ctx => ctx.tool === kind,
+});
+
 const SceneControls = (): MenuControl[] => [
   PinControl(Vector.create(0, 0)),
   PosPinControl(Vector.create(5, 0)),
@@ -307,7 +321,9 @@ const ToolboxControls = (): MenuControl[] => [
   MenuCloseControl(),
   MoveControl(Vector.create(3, 0)),
   DragControl(Vector.create(5, 0)),
-  PauseResumeControl(Vector.create(8, 0)),
+  CreateControl(Vector.create(8, 0), 'rectangle'),
+  CreateControl(Vector.create(10, 0), 'circle'),
+  PauseResumeControl(Vector.create(13, 0)),
 ];
 
 export const OpenToolboxMenu = (ctx: Context) => {

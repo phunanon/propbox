@@ -38,31 +38,11 @@ export const HandleZoom = ({ mouseConstraint, scale, render }: Context) => {
   Mouse.setOffset(mouse, render.bounds.min);
 };
 
-//FIXME: regression: dragging object (might be best to create a drag tool and fix it then)
+/** Pans scene */
 export const HandlePan = (ctx: Context) => {
-  const { mouseState, mouseConstraint, render, panningFrom, mouseDownAt } = ctx;
-  const { mouse, body } = mouseConstraint;
+  const { mouseState, mouseConstraint, render, panningFrom } = ctx;
+  const { mouse } = mouseConstraint;
 
-  //Do not allow move tool to drag bodies
-  if (ctx.tool === 'move') {
-    //@ts-ignore because the type definition is wrong
-    mouseConstraint.constraint.bodyA = null;
-    //@ts-ignore because the type definition is wrong
-    mouseConstraint.constraint.bodyB = null;
-  }
-
-  //If the mouse has moved since the mousedown, start pan
-  if (
-    mouseDownAt &&
-    mouseDownAt.x !== mouse.absolute.x &&
-    mouseDownAt.y !== mouse.absolute.y &&
-    (ctx.tool !== 'drag' || !body)
-  ) {
-    ctx.mouseState = 'pan';
-    delete ctx.mouseDownAt;
-  }
-
-  //Finish pan
   if (mouseState !== 'pan') {
     delete ctx.panningFrom;
     return;

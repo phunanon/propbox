@@ -9,14 +9,16 @@ Features so far (adding upon the [Matter.js](https://brm.io/matter-js/) engine):
 - dragging
 - play/pause
 - tool menu
+- create square
+- create circle
 
 Planned features:
 
-- create square
-- create circle
-- create polygon
 - draggable menus
 - kinetic pan
+- eraser
+- specify and create polygon
+- draw polygon
 - save/load/import/export
 - clouds
 - create plane

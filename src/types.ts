@@ -1,6 +1,7 @@
-import { MouseConstraint, Render, Runner, Vector } from 'matter-js';
+import { Engine, MouseConstraint, Render, Runner, Vector } from 'matter-js';
 
-type ToolKind = 'move' | 'drag';
+export const createTools = ['rectangle', 'circle'] as const;
+export type ToolKind = 'pan' | 'drag' | (typeof createTools)[number];
 type ControlKind =
   | 'close'
   | 'pin'
@@ -8,10 +9,19 @@ type ControlKind =
   | 'toolbox'
   | 'pauseResume'
   | ToolKind;
+type MouseState =
+  | 'rest'
+  | [Vector, 'press']
+  | 'drag'
+  | 'pan'
+  | [Vector, 'draw']
+  /** Just a click */
+  | 'click';
 
 export type Context = {
   render: Render;
   runner: Runner;
+  engine: Engine;
   mouseConstraint: MouseConstraint;
   scale: {
     by: number;
@@ -21,9 +31,7 @@ export type Context = {
     readonly min: number;
     readonly max: number;
   };
-  mouseDownAt?: Vector;
-  /** For menu closing mechanism */
-  mouseState?: 'undetermined' | 'drag' | 'pan' | 'afterDragOrPan' | 'up';
+  mouseState: MouseState;
   panningFrom?: Vector;
   menuOpenedWhen?: number;
   menus: Menu[];

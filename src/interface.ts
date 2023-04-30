@@ -1,11 +1,12 @@
 import { Engine, Runner, Mouse, Common, Vector, Body } from 'matter-js';
 import { Bodies, Composite, MouseConstraint, Composites } from 'matter-js';
 import { Events } from 'matter-js';
-import { Context } from './types';
+import { Context, createTools } from './types';
 import { HandlePan, HandleZoom } from './zoom-pan';
 import { load, save } from './load-save';
 import { Render } from './render';
 import { HandleMenu, OpenToolboxMenu } from './context-menu';
+import { HandleCreateShapes } from './create-shapes';
 
 export const Interface = (canvas: HTMLCanvasElement) => {
   const engine = Engine.create(); //load() ?? Engine.create();
@@ -42,44 +43,16 @@ export const Interface = (canvas: HTMLCanvasElement) => {
     0,
     0,
     function (x: number, y: number) {
-      switch (Math.round(Common.random(0, 1))) {
-        case 0:
-          if (Common.random() < 0.8) {
-            return Bodies.rectangle(
-              x,
-              y,
-              Common.random(20, 50),
-              Common.random(20, 50),
-              { render: { lineWidth: 2, strokeStyle: '#aaa' } }
-            );
-          } else {
-            return Bodies.rectangle(
-              x,
-              y,
-              Common.random(80, 120),
-              Common.random(20, 30),
-              { render: { lineWidth: 2, strokeStyle: '#aaa' } }
-            );
-          }
-        case 1:
-          var sides = Math.round(Common.random(1, 8));
-          sides = sides === 3 ? 4 : sides;
-          return Bodies.polygon(x, y, sides, Common.random(20, 50), {
-            render: { lineWidth: 2, strokeStyle: '#aaa' },
-          });
-      }
+      var sides = Math.round(Common.random(1, 8));
+      return Bodies.polygon(x, y, sides, Common.random(20, 50), {
+        render: { lineWidth: 2, strokeStyle: '#aaa' },
+      });
     }
   );
 
   Composite.add(world, [
     stack,
-    // Bodies.rectangle(400, 0, 800, 50, { isStatic: true, render: {fillStyle: "#fff"} }),
-    Bodies.rectangle(400, 600, 800, 50, {
-      isStatic: true,
-      render: { fillStyle: '#fff' },
-    }),
-    Bodies.rectangle(800, 300, 50, 600, { isStatic: true }),
-    Bodies.rectangle(0, 300, 50, 600, { isStatic: true }),
+    Bodies.rectangle(0, 600, 8000, 50, { isStatic: true }),
   ]);
 
   Render.run(render);
@@ -95,7 +68,8 @@ export const Interface = (canvas: HTMLCanvasElement) => {
       lastImpulse: new Date().getTime(),
       targetPos: { x: 0, y: 0 },
     },
-    ...{ render, runner, mouseConstraint, menus: [], tool: 'drag' },
+    mouseState: 'rest',
+    ...{ render, runner, engine, mouseConstraint, menus: [], tool: 'drag' },
   };
 
   OpenToolboxMenu(ctx);
@@ -124,27 +98,52 @@ export const Interface = (canvas: HTMLCanvasElement) => {
   };
 };
 
-const BeforeRender = (context: Context) => () => {
-  const { mouseState, mouseConstraint } = context;
+const BeforeRender = (ctx: Context) => () => {
+  const { mouseState, mouseConstraint, tool } = ctx;
   const { mouse, body } = mouseConstraint;
   const leftClicked = mouse.button === 0;
-  if (!mouseState || mouseState === 'up' || mouseState === 'afterDragOrPan') {
-    if (leftClicked) {
-      context.mouseState = 'undetermined';
-      context.mouseDownAt = Vector.clone(mouse.absolute);
+
+  if (mouseState === 'rest') {
+    if (leftClicked) ctx.mouseState = [Vector.clone(mouse.absolute), 'press'];
+  } else if (Array.isArray(mouseState)) {
+    const [pos, state] = mouseState;
+    if (state !== 'draw') {
+      const mouseHasMoved =
+        mouse.absolute.x !== pos.x || mouse.absolute.y !== pos.y;
+      if (mouseHasMoved) {
+        if (tool === 'drag') {
+          ctx.mouseState = body && !body.isStatic ? 'drag' : 'pan';
+        } else if (tool === 'pan') {
+          ctx.mouseState = 'pan';
+        } else if (createTools.some(t => t === tool)) {
+          ctx.mouseState = [pos, 'draw'];
+        }
+      } else if (!leftClicked) {
+        ctx.mouseState = 'click';
+      }
     }
   } else {
-    if (mouseState === 'undetermined') {
-      if (body && !body.isStatic) context.mouseState = 'drag';
-      else if (!leftClicked) context.mouseState = 'up';
-    } else if (!leftClicked) {
-      context.mouseState = 'afterDragOrPan';
+    if (mouseState === 'drag' || mouseState === 'pan') {
+      if (!leftClicked) ctx.mouseState = 'rest';
     }
+    //The drawing mouseState is handled by create-shapes.ts
+    //The click mouseState is handled by context-menu.ts
+    //TODO: in the future, we'll be able to click shapes too, so this needs to be changed
   }
-  HandleZoom(context);
-  HandlePan(context);
+
+  //Do not allow anything but drag tool to drag bodies
+  if (tool !== 'drag') {
+    //@ts-ignore because the type definition is wrong
+    mouseConstraint.constraint.bodyA = null;
+    //@ts-ignore because the type definition is wrong
+    mouseConstraint.constraint.bodyB = null;
+  }
+
+  HandleZoom(ctx);
+  HandlePan(ctx);
 };
 
 const AfterRender = (context: Context) => () => {
-  HandleMenu(context);
+  if (HandleMenu(context)) return;
+  HandleCreateShapes(context);
 };
