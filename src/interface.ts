@@ -1,4 +1,4 @@
-import { Engine, Runner, Mouse, Common, Vector, Body } from 'matter-js';
+import { Engine, Runner, Mouse, Common, Vector } from 'matter-js';
 import { Bodies, Composite, MouseConstraint, Composites } from 'matter-js';
 import { Events } from 'matter-js';
 import { Context, createTools } from './types';
@@ -6,7 +6,7 @@ import { HandlePan, HandleZoom } from './zoom-pan';
 import { load, save } from './load-save';
 import { Render } from './render';
 import { HandleMenu, OpenToolboxMenu } from './context-menu';
-import { HandleCreateShapes } from './create-shapes';
+import { HandleCreateShapes } from './create-things';
 import { HandleEraseShapes } from './erase-shapes';
 
 export const Interface = (canvas: HTMLCanvasElement) => {
@@ -28,7 +28,12 @@ export const Interface = (canvas: HTMLCanvasElement) => {
   const mouse = Mouse.create(render.canvas);
   const mouseConstraint = MouseConstraint.create(engine, {
     mouse,
-    constraint: { render: { visible: false } },
+    constraint: {
+      render: { visible: false },
+      //FIXME: I can submit a PR to the type definitions to fix this
+      //@ts-ignore because the type definition is wrong
+      angularStiffness: 0,
+    },
   });
 
   Composite.add(world, mouseConstraint);
@@ -37,7 +42,7 @@ export const Interface = (canvas: HTMLCanvasElement) => {
   render.mouse = mouse;
 
   const stack = Composites.stack(
-    20,
+    400,
     20,
     10,
     4,
@@ -53,7 +58,10 @@ export const Interface = (canvas: HTMLCanvasElement) => {
 
   Composite.add(world, [
     stack,
-    Bodies.rectangle(0, 600, 8000, 50, { isStatic: true }),
+    Bodies.rectangle(0, 8_000 + 600, 16_000, 16_000, {
+      isStatic: true,
+      render: { fillStyle: '#afa' },
+    }),
   ]);
 
   Render.run(render);

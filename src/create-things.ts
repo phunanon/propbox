@@ -1,5 +1,7 @@
-import { Bodies, Vector, World } from 'matter-js';
+import { Bodies, Composite, Constraint, Query, Vector, World } from 'matter-js';
 import { Context, createTools } from './types';
+
+export let springFromBodyCentre = false;
 
 export const HandleCreateShapes = (ctx: Context) => {
   const { mouseState, mouseConstraint } = ctx;
@@ -10,7 +12,7 @@ export const HandleCreateShapes = (ctx: Context) => {
   const [pos] = mouseState;
 
   if (mouseConstraint.mouse.button) {
-    CreateShape(ctx, pos, mouse.absolute);
+    CreateThing(ctx, pos, mouse.absolute);
     ctx.mouseState = 'rest';
     return;
   }
@@ -32,11 +34,22 @@ const DrawOutline = (context: Context, a: Vector, b: Vector) => {
   } else if (context.tool === 'circle') {
     const r = Vector.magnitude(delta);
     ctx.arc(a.x, a.y, r, 0, 2 * Math.PI);
+  } else if (context.tool === 'spring') {
+    ctx.lineWidth = 2;
+    ctx.moveTo(a.x, a.y);
+    const angle = Math.atan2(delta.y, delta.x);
+    const length = Vector.magnitude(delta);
+    for (let i = 0; i < length / 5; i++) {
+      const zigzag = i % 2 === 1 ? Math.PI / 10 : -Math.PI / 10;
+      const x = a.x + Math.cos(angle) * i * 5 + Math.cos(angle + zigzag) * 10;
+      const y = a.y + Math.sin(angle) * i * 5 + Math.sin(angle + zigzag) * 10;
+      ctx.lineTo(x, y);
+    }
   }
   ctx.stroke();
 };
 
-const CreateShape = (ctx: Context, a: Vector, b: Vector) => {
+const CreateThing = (ctx: Context, a: Vector, b: Vector) => {
   const scale = ctx.scale.by;
   const delta = Vector.sub(b, a);
   if (ctx.tool === 'rectangle') {
@@ -59,6 +72,36 @@ const CreateShape = (ctx: Context, a: Vector, b: Vector) => {
     const radius = Vector.magnitude(delta) * scale;
     const body = createCircle(xy, radius);
     World.add(ctx.engine.world, body);
+  } else if (ctx.tool === 'spring') {
+    const xyA = Vector.add(
+      ctx.render.bounds.min,
+      Vector.mult(Vector.create(a.x, a.y), scale)
+    );
+    const xyB = Vector.add(
+      ctx.render.bounds.min,
+      Vector.mult(Vector.create(b.x, b.y), scale)
+    );
+    const [bodyA] = Query.point(Composite.allBodies(ctx.engine.world), xyA);
+    const [bodyB] = Query.point(Composite.allBodies(ctx.engine.world), xyB);
+    if (bodyA === bodyB || (!bodyA && !bodyB)) return;
+    const constraint = Constraint.create({
+      bodyA,
+      bodyB,
+      pointA: bodyA
+        ? ctx.springFromBodyCentre
+          ? undefined
+          : Vector.sub(xyA, bodyA.position)
+        : Vector.add(xyA, Vector.create(1, 1)),
+      pointB: bodyB
+        ? ctx.springFromBodyCentre
+          ? undefined
+          : Vector.sub(xyB, bodyB.position)
+        : Vector.add(xyB, Vector.create(1, 1)),
+      stiffness: 0.05,
+      damping: 0.01,
+      render: { strokeStyle: '#000' },
+    });
+    World.add(ctx.engine.world, constraint);
   }
 };
 
