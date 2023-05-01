@@ -873,6 +873,25 @@ Render.bodies = function (render, bodies, context) {
           } else {
             c.fill();
           }
+
+          /////////////////////////////////////
+          //This is where I made circle cakes//
+          /////////////////////////////////////
+          if (part.circleRadius) {
+            c.save();
+            c.filter = 'brightness(50%)';
+            c.beginPath();
+            c.moveTo(part.position.x, part.position.y);
+            c.arc(
+              part.position.x,
+              part.position.y,
+              part.circleRadius - part.render.lineWidth,
+              part.angle - Math.PI / 12,
+              part.angle + Math.PI / 12
+            );
+            c.fill();
+            c.restore();
+          }
         } else {
           c.lineWidth = 1;
           c.strokeStyle = '#bbb';

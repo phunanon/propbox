@@ -6,17 +6,16 @@ Features so far (adding upon the [Matter.js](https://brm.io/matter-js/) engine):
 
 - zooming and panning
 - autosave
-- dragging
+- body drag, erase
 - play/pause
 - tool menu
-- create square
-- create circle
+- create square, circle
 
 Planned features:
 
+- dynamic cursor
 - draggable menus
 - kinetic pan
-- eraser
 - specify and create polygon
 - draw polygon
 - save/load/import/export
@@ -26,6 +25,7 @@ Planned features:
 - select shape/s
 - change fixed physical properties (dimensions, density, etc)
 - resize shapes
+- rotate shapes
 - create fixjoints
 - create hinges
 - create motors

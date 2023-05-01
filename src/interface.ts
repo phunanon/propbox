@@ -7,6 +7,7 @@ import { load, save } from './load-save';
 import { Render } from './render';
 import { HandleMenu, OpenToolboxMenu } from './context-menu';
 import { HandleCreateShapes } from './create-shapes';
+import { HandleEraseShapes } from './erase-shapes';
 
 export const Interface = (canvas: HTMLCanvasElement) => {
   const engine = Engine.create(); //load() ?? Engine.create();
@@ -143,7 +144,13 @@ const BeforeRender = (ctx: Context) => () => {
   HandlePan(ctx);
 };
 
-const AfterRender = (context: Context) => () => {
-  if (HandleMenu(context)) return;
-  HandleCreateShapes(context);
+const AfterRender = (ctx: Context) => () => {
+  if (HandleMenu(ctx)) return;
+
+  HandleCreateShapes(ctx);
+  HandleEraseShapes(ctx);
+
+  if (ctx.mouseConstraint.mouse.button) {
+    ctx.mouseState = 'rest';
+  }
 };

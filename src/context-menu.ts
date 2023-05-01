@@ -1,5 +1,5 @@
 import { Vector } from 'matter-js';
-import { Context, Menu, MenuControl, ToolKind } from './types';
+import { Context, Menu, MenuControl, ToolKind, toolIcons } from './types';
 
 const fontSize = 16;
 const gridY = fontSize * 2;
@@ -299,10 +299,10 @@ const PauseResumeControl = (xy: Vector): MenuControl => ({
   highlighted: ctx => !ctx.runner.enabled,
 });
 
-const CreateControl = (xy: Vector, kind: ToolKind): MenuControl => ({
+const ToolControl = (xy: Vector, kind: ToolKind): MenuControl => ({
   type: 'button',
   kind,
-  icon: kind === 'rectangle' ? '\uf0c8' : '\uf111',
+  icon: toolIcons[kind],
   box: { x: xy.x, y: xy.y, width: 2, height: 1 },
   onClick: ctx => {
     ctx.tool = kind;
@@ -321,9 +321,10 @@ const ToolboxControls = (): MenuControl[] => [
   MenuCloseControl(),
   MoveControl(Vector.create(3, 0)),
   DragControl(Vector.create(5, 0)),
-  CreateControl(Vector.create(8, 0), 'rectangle'),
-  CreateControl(Vector.create(10, 0), 'circle'),
-  PauseResumeControl(Vector.create(13, 0)),
+  ToolControl(Vector.create(8, 0), 'rectangle'),
+  ToolControl(Vector.create(10, 0), 'circle'),
+  ToolControl(Vector.create(12, 0), 'erase'),
+  PauseResumeControl(Vector.create(15, 0)),
 ];
 
 export const OpenToolboxMenu = (ctx: Context) => {

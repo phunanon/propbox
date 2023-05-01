@@ -1,9 +1,10 @@
 import { Bodies, Vector, World } from 'matter-js';
-import { Context } from './types';
+import { Context, createTools } from './types';
 
 export const HandleCreateShapes = (ctx: Context) => {
   const { mouseState, mouseConstraint } = ctx;
   if (!Array.isArray(mouseState) || mouseState[1] !== 'draw') return;
+  if (!createTools.some(t => t === ctx.tool)) return;
 
   const { mouse } = mouseConstraint;
   const [pos] = mouseState;

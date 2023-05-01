@@ -1,7 +1,7 @@
 import { Engine, MouseConstraint, Render, Runner, Vector } from 'matter-js';
 
 export const createTools = ['rectangle', 'circle'] as const;
-export type ToolKind = 'pan' | 'drag' | (typeof createTools)[number];
+export type ToolKind = 'pan' | 'drag' | 'erase' | (typeof createTools)[number];
 type ControlKind =
   | 'close'
   | 'pin'
@@ -64,4 +64,12 @@ export type Box = {
   y: number;
   width: number;
   height: number;
+};
+
+export const toolIcons: Record<ToolKind, string> = {
+  pan: '\uf0b2',
+  drag: '\uf25a',
+  erase: '\uf12d',
+  rectangle: '\uf0c8',
+  circle: '\uf111',
 };
