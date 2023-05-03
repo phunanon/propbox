@@ -1,11 +1,16 @@
 import { Engine, Runner, Mouse, Common, Vector } from 'matter-js';
 import { Bodies, Composite, MouseConstraint, Composites } from 'matter-js';
 import { Events } from 'matter-js';
-import { Context, createTools } from './types';
+import { Context, Menu, createTools } from './types';
 import { HandlePan, HandleZoom } from './zoom-pan';
 import { load, save } from './load-save';
 import { Render } from './render';
-import { HandleMenu, OpenToolboxMenu } from './context-menu';
+import {
+  HandleMenu,
+  MenuUnderMouse,
+  MenuPosition,
+  OpenToolboxMenu,
+} from './context-menu';
 import { HandleCreateShapes } from './create-things';
 import { HandleEraseShapes } from './erase-shapes';
 
@@ -113,12 +118,25 @@ const BeforeRender = (ctx: Context) => () => {
   const leftClicked = mouse.button === 0;
 
   if (mouseState === 'rest') {
-    if (leftClicked) ctx.mouseState = [Vector.clone(mouse.absolute), 'press'];
-  } else if (Array.isArray(mouseState)) {
+    if (leftClicked) {
+      const menu = MenuUnderMouse(ctx);
+      if (menu) {
+        ctx.mouseState = [Vector.clone(mouse.absolute), 'menuPress', menu];
+      } else {
+        ctx.mouseState = [Vector.clone(mouse.absolute), 'press'];
+      }
+    }
+  } else if (Array.isArray(mouseState) && mouseState[1] !== 'menuDrag') {
     const [pos, state] = mouseState;
-    if (state !== 'draw') {
-      const mouseHasMoved =
-        mouse.absolute.x !== pos.x || mouse.absolute.y !== pos.y;
+    const mouseHasMoved =
+      mouse.absolute.x !== pos.x || mouse.absolute.y !== pos.y;
+    if (mouseHasMoved && state === 'menuPress') {
+      const offset = Vector.sub(
+        mouse.absolute,
+        MenuPosition(ctx, mouseState[2])
+      );
+      ctx.mouseState = [offset, 'menuDrag', mouseState[2]];
+    } else if (state !== 'draw') {
       if (mouseHasMoved) {
         if (tool === 'drag') {
           ctx.mouseState = body && !body.isStatic ? 'drag' : 'pan';
@@ -141,10 +159,11 @@ const BeforeRender = (ctx: Context) => () => {
   }
 
   //Do not allow anything but drag tool to drag bodies
-  if (tool !== 'drag') {
-    //@ts-ignore because the type definition is wrong
+  if (
+    tool !== 'drag' ||
+    (Array.isArray(mouseState) && mouseState[1] === 'menuDrag')
+  ) {
     mouseConstraint.constraint.bodyA = null;
-    //@ts-ignore because the type definition is wrong
     mouseConstraint.constraint.bodyB = null;
   }
 

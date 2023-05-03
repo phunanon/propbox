@@ -52,6 +52,8 @@ const DrawOutline = (context: Context, a: Vector, b: Vector) => {
 const CreateThing = (ctx: Context, a: Vector, b: Vector) => {
   const scale = ctx.scale.by;
   const delta = Vector.sub(b, a);
+  const magnitude = Vector.magnitude(delta);
+  if (magnitude < 1) return;
   if (ctx.tool === 'rectangle') {
     const x = Math.min(a.x, b.x);
     const y = Math.min(a.y, b.y);
@@ -69,7 +71,8 @@ const CreateThing = (ctx: Context, a: Vector, b: Vector) => {
       ctx.render.bounds.min,
       Vector.mult(Vector.create(a.x, a.y), scale)
     );
-    const radius = Vector.magnitude(delta) * scale;
+    const radius = magnitude * scale;
+    if (radius < 1) return;
     const body = createCircle(xy, radius);
     World.add(ctx.engine.world, body);
   } else if (ctx.tool === 'spring') {

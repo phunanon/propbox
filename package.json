@@ -13,7 +13,7 @@
     "matter-js": "^0.19.0"
   },
   "devDependencies": {
-    "@types/matter-js": "^0.18.2",
+    "@types/matter-js": "^0.18.3",
     "ts-loader": "^9.4.2",
     "typescript": "^5.0.4",
     "webpack": "^5.80.0",

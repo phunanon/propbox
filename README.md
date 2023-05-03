@@ -9,7 +9,7 @@ This is essentially an interface to the [Matter.js](https://brm.io/matter-js/) p
 - auto-save and auto-load
 - body drag, erase
 - play/pause
-- helpful context menus
+- draggable context menus
 - create rectangles, circles, springs
 
 **Planned features:**
@@ -28,6 +28,7 @@ This is essentially an interface to the [Matter.js](https://brm.io/matter-js/) p
 - clouds
 - grid
 - select shape/s
+- follow shape
 - change fixed physical properties (dimensions, density, etc)
 - resize shapes
 - rotate shapes

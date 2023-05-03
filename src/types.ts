@@ -12,14 +12,18 @@ type ControlKind =
   | 'pauseResume'
   | 'checkbox'
   | 'checkboxChecked'
+  | 'console'
+  | 'text'
   | ToolKind;
 
 type MouseState =
   | 'rest'
   | [Vector, 'press']
+  | [Vector, 'menuPress', Menu]
   | 'drag'
   | 'pan'
   | [Vector, 'draw']
+  | [Vector, 'menuDrag', Menu]
   /** Just a click */
   | 'click';
 
@@ -55,10 +59,10 @@ export type Menu = {
 export type MenuControl = {
   /** xy on a gapped grid, wh in 1:2 intervals */
   box: Box;
-  type: 'button' | 'checkbox';
+  type: 'button' | 'checkbox' | 'text';
   kind: ControlKind;
   label?: string;
-  icon: string | ((ctx: Context, menu: Menu, control: MenuControl) => string);
+  icon?: string | ((ctx: Context, menu: Menu, control: MenuControl) => string);
   farIcon?: boolean;
   readonly keepMenuOpen?: boolean;
   onClick: (
@@ -77,7 +81,7 @@ export type Box = {
   height: number;
 };
 
-//TODO: code f121  settings f1de  layers f5fd  text f10d  select f065  hinge? f140  grid f00a  console f120
+//TODO: settings f1de  layers f5fd  text f10d  select f065  hinge? f140  grid f00a  console f120
 //https://fontawesome.com/search?p=3&o=r&m=free&s=solid&f=classic
 export const icons: Record<ControlKind, string> = {
   pan: '\uf0b2',
@@ -93,4 +97,6 @@ export const icons: Record<ControlKind, string> = {
   pauseResume: '\uf04c',
   checkbox: '\uf0c8',
   checkboxChecked: '\uf14a',
+  console: '\uf121',
+  text: '\uf031',
 };

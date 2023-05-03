@@ -4,6 +4,7 @@ import { Context, Menu, MenuControl, ToolKind, icons } from './types';
 const fontSize = 16;
 const gridY = fontSize * 2;
 const gridX = gridY / 2;
+const [menuMargin, controlMargin] = [4, 2];
 
 /** Checks if a menu is pinned */
 const isPinned = (menu: Menu) => menu.pinnedPos || menu.pinnedScale;
@@ -27,10 +28,8 @@ const controlFlow = (controls: MenuControl[], control: MenuControl) => {
 };
 
 export const HandleMenu = (ctx: Context) => {
-  const rightClicked = ctx.mouseConstraint.mouse.button === 2;
-  const { body } = ctx.mouseConstraint;
-  const now = new Date().getTime();
-  const menus = ctx.menus;
+  const { mouseConstraint, mouseState, menus } = ctx;
+  const rightClicked = mouseConstraint.mouse.button === 2;
 
   const closeLeftmost = () => {
     const idx = menus.findIndex(m => !isPinned(m));
@@ -41,10 +40,22 @@ export const HandleMenu = (ctx: Context) => {
 
   //Click a menu or close the leftmost menu
   let clicked = false;
-  if (ctx.mouseState === 'click') {
-    clicked = HandleMenuClick(ctx);
+  if (mouseState === 'click') {
+    clicked = !!HandleMenuClick(ctx);
     ctx.mouseState = 'rest';
     if (!clicked) closeLeftmost();
+  }
+
+  //Move menu
+  if (Array.isArray(mouseState) && mouseState[1] === 'menuDrag') {
+    const menu = mouseState[2];
+    menu.position = Vector.sub(mouseConstraint.mouse.absolute, mouseState[0]);
+    if (menu.pinnedScale) {
+      menu.position = Vector.add(
+        Vector.mult(menu.position, ctx.scale.by),
+        ctx.render.bounds.min
+      );
+    }
   }
 
   //Close menus based on their optional predicates
@@ -68,7 +79,7 @@ export const HandleMenu = (ctx: Context) => {
   return clicked;
 };
 
-const HandleMenuClick = (ctx: Context) => {
+const HandleMenuClick = (ctx: Context, justCheck = false) => {
   const { menus, mouseConstraint } = ctx;
   const { absolute } = mouseConstraint.mouse;
   for (let m = menus.length - 1; m >= 0; --m) {
@@ -81,6 +92,7 @@ const HandleMenuClick = (ctx: Context) => {
       absolute.y > y &&
       absolute.y < y + menuDim.height;
     if (!inBounds) continue;
+    if (justCheck) return menu;
     const controls = visibleControls(menu, ctx);
     const clicked = controls.find(control => {
       const contDim = ControlBounds(ctx, menu, control, menuDim.scale);
@@ -106,6 +118,9 @@ const HandleMenuClick = (ctx: Context) => {
   return false;
 };
 
+export const MenuUnderMouse = (ctx: Context) =>
+  (HandleMenuClick(ctx, true) || undefined) as Menu | undefined;
+
 /** Gets the menu's calculated dimensions, unscaled */
 const MenuDimensions = (ctx: Context, menu: Menu) => {
   let [x2, y2] = [0, 0];
@@ -116,8 +131,8 @@ const MenuDimensions = (ctx: Context, menu: Menu) => {
     x2 = Math.max(x2, box.x + box.width);
     y2 = Math.max(y2, box.y + box.height + flow);
   }
-  const width = x2 * gridX;
-  const height = y2 * gridY;
+  const width = x2 * gridX + menuMargin * 2;
+  const height = y2 * gridY + menuMargin * 2;
   return { width, height };
 };
 
@@ -131,7 +146,7 @@ const ScaledMenuDimensions = (ctx: Context, menu: Menu) => {
 };
 
 /** Gets the absolute position of a menu on the screen */
-const MenuPosition = (context: Context, menu: Menu) => {
+export const MenuPosition = (context: Context, menu: Menu) => {
   if (menu.pinnedScale) {
     const pos = Vector.div(
       Vector.sub(menu.position, context.render.bounds.min),
@@ -157,9 +172,9 @@ const DrawMenus = (context: Context, ctx: CanvasRenderingContext2D) => {
       ctx.scale(menuScale, menuScale);
     }
     //Background
-    ctx.fillRect(-2, -2, width + 4, height + 6);
+    ctx.fillRect(0, 0, width, height);
     //Controls
-    ctx.translate(0, 2);
+    ctx.translate(menuMargin, menuMargin);
     menu.controls.forEach(control => {
       if (control.hidden?.(context, menu)) return;
       const box = ControlBounds(context, menu, control);
@@ -168,10 +183,10 @@ const DrawMenus = (context: Context, ctx: CanvasRenderingContext2D) => {
         : 'rgba(127, 255, 127, 0.5)';
       const stretch = doStretchControl(visibleControls(menu, context), control);
       ctx.fillRect(
-        box.x + 2,
-        box.y + 2,
-        stretch ? width - 4 : box.width - 4,
-        box.height - 4
+        box.x + controlMargin,
+        box.y + controlMargin,
+        (stretch ? width - menuMargin * 2 : box.width) - controlMargin * 2,
+        box.height - controlMargin * 2
       );
       ctx.fillStyle = '#fff';
       const baseline = box.y + box.height / 1.5;
@@ -181,7 +196,20 @@ const DrawMenus = (context: Context, ctx: CanvasRenderingContext2D) => {
           typeof control.icon === 'string'
             ? control.icon
             : control.icon(context, menu, control);
-        ctx.fillText(icon, box.x + 10, baseline);
+        ctx.save();
+        ctx.translate(box.x + fontSize / 2 + controlMargin, baseline);
+        if (icon === '\uf04c') {
+          ctx.translate(1.5, 0);
+        }
+        if (icon === '\uf121') {
+          ctx.translate(0, -1);
+          ctx.scale(0.75, 0.75);
+        }
+        if (icon === '\uf00d') {
+          ctx.translate(1, 0);
+        }
+        ctx.fillText(icon, 0, 0);
+        ctx.restore();
       }
       if (control.label) {
         ctx.font = `${fontSize}px Arial`;
@@ -330,11 +358,21 @@ const ToolControl = (xy: Vector, kind: ToolKind): MenuControl => ({
   highlighted: ctx => ctx.tool === kind,
 });
 
+const ConsoleControl = ({ x, y }: Vector): MenuControl => ({
+  type: 'button',
+  kind: 'console',
+  label: 'console',
+  icon: icons.console,
+  box: { x, y, width: 6, height: 1 },
+  onClick: OpenConsoleMenu,
+  hidden: ctx => !!ctx.menus.find(m => m.name === 'console'),
+});
+
 const SceneControls = (): MenuControl[] => [
   PinControl(Vector.create(0, 0)),
   PosPinControl(Vector.create(5, 0)),
   ToolboxControl(Vector.create(0, 1)),
-  PosPinControl(Vector.create(0, 1)), //TODO: Remove this
+  ConsoleControl(Vector.create(0, 1)),
 ];
 
 const ToolboxControls = (): MenuControl[] => [
@@ -364,6 +402,25 @@ const SpringControls = (): MenuControl[] => [
     },
   },
 ];
+
+const ConsoleControls = (): MenuControl[] => [
+  MenuCloseControl(),
+  {
+    type: 'text',
+    kind: 'text',
+    box: { x: 0, y: 1, width: 20, height: 8 },
+    onClick: () => {},
+  },
+];
+
+const OpenConsoleMenu = (ctx: Context) => {
+  ctx.menus.push({
+    name: 'console',
+    controls: ConsoleControls(),
+    position: Vector.create(0, gridY + menuMargin * 2),
+    pinnedPos: true,
+  });
+};
 
 export const OpenToolboxMenu = (ctx: Context) => {
   ctx.menus.push({
