@@ -13,7 +13,6 @@ type ControlKind =
   | 'checkbox'
   | 'checkboxChecked'
   | 'console'
-  | 'text'
   | ToolKind;
 
 type MouseState =
@@ -59,13 +58,13 @@ export type Menu = {
 export type MenuControl = {
   /** xy on a gapped grid, wh in 1:2 intervals */
   box: Box;
-  type: 'button' | 'checkbox' | 'text';
-  kind: ControlKind;
-  label?: string;
+  readonly type: 'button' | 'checkbox' | 'text' | 'label';
+  kind?: ControlKind;
+  text?: string;
   icon?: string | ((ctx: Context, menu: Menu, control: MenuControl) => string);
   farIcon?: boolean;
   readonly keepMenuOpen?: boolean;
-  onClick: (
+  onClick?: (
     ctx: Context,
     menu: Menu,
     self: MenuControl
@@ -98,5 +97,4 @@ export const icons: Record<ControlKind, string> = {
   checkbox: '\uf0c8',
   checkboxChecked: '\uf14a',
   console: '\uf121',
-  text: '\uf031',
 };

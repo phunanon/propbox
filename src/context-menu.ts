@@ -1,10 +1,11 @@
 import { Vector } from 'matter-js';
-import { Context, Menu, MenuControl, ToolKind, icons } from './types';
+import { Box, Context, Menu, MenuControl, ToolKind, icons } from './types';
+import { PutDomControls } from './dom-controls';
 
 const fontSize = 16;
 const gridY = fontSize * 2;
 const gridX = gridY / 2;
-const [menuMargin, controlMargin] = [4, 2];
+export const [menuMargin, controlMargin] = [4, 2];
 
 /** Checks if a menu is pinned */
 const isPinned = (menu: Menu) => menu.pinnedPos || menu.pinnedScale;
@@ -76,6 +77,7 @@ export const HandleMenu = (ctx: Context) => {
   if (!ctx2d) return;
 
   DrawMenus(ctx, ctx2d);
+  PutDomControls(ctx);
   return clicked;
 };
 
@@ -103,9 +105,10 @@ const HandleMenuClick = (ctx: Context, justCheck = false) => {
         absolute.y < y + contDim.y + contDim.height
       );
     });
-    if (!clicked) continue;
+    const onClick = clicked?.onClick;
+    if (!onClick) continue;
     console.log(clicked.kind);
-    const action = clicked.onClick(ctx, menu, clicked);
+    const action = onClick(ctx, menu, clicked);
     const pinned = isPinned(menu);
     if (
       (action !== 'keep' && !pinned && !clicked.keepMenuOpen) ||
@@ -178,9 +181,13 @@ const DrawMenus = (context: Context, ctx: CanvasRenderingContext2D) => {
     menu.controls.forEach(control => {
       if (control.hidden?.(context, menu)) return;
       const box = ControlBounds(context, menu, control);
-      ctx.fillStyle = !control.highlighted?.(context)
-        ? 'rgba(0, 0, 0, 0.25)'
-        : 'rgba(127, 255, 127, 0.5)';
+      if (control.type === 'text') {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+      } else {
+        ctx.fillStyle = !control.highlighted?.(context)
+          ? 'rgba(0, 0, 0, 0.25)'
+          : 'rgba(127, 255, 127, 0.5)';
+      }
       const stretch = doStretchControl(visibleControls(menu, context), control);
       ctx.fillRect(
         box.x + controlMargin,
@@ -211,45 +218,48 @@ const DrawMenus = (context: Context, ctx: CanvasRenderingContext2D) => {
         ctx.fillText(icon, 0, 0);
         ctx.restore();
       }
-      if (control.label) {
+      if (control.text) {
         ctx.font = `${fontSize}px Arial`;
-        ctx.fillText(control.label, box.x + 12 + fontSize, baseline);
+        const offset = control.type === 'label' ? 8 : fontSize + 12;
+        ctx.fillText(control.text, box.x + offset, baseline);
       }
     });
     ctx.restore();
   });
 };
 
-/** Calculates the absolute scaled dimensions and position of a control */
-const ControlBounds = (
+/** Calculates the absolute scaled bounds of a control in a menu */
+export const ControlBounds = (
   ctx: Context,
   menu: Menu,
   control: MenuControl,
   scale = 1
-) => {
+): Box => {
   const { box } = control;
   const controls = visibleControls(menu, ctx);
   const stretch = doStretchControl(controls, control);
   const flow = controlFlow(controls, control);
   const boxY = box.y + flow;
-  const contWidth = stretch ? MenuDimensions(ctx, menu).width : box.width;
+  const contWidth = stretch
+    ? MenuDimensions(ctx, menu).width
+    : box.width * gridX;
   const { x, y } = Vector.mult(
     Vector.create(box.x * gridX, boxY * gridY),
     scale
   );
   const { x: width, y: height } = Vector.mult(
-    Vector.create(contWidth * gridX, box.height * gridY),
+    Vector.create(contWidth, box.height * gridY),
     scale
   );
   return { x, y, width, height };
 };
 
 /** Closes menu */
-const MenuCloseControl = (): MenuControl => ({
+const MenuCloseControl = ({ x, y }: Vector = Vector.create()): MenuControl => ({
   type: 'button',
   kind: 'close',
   icon: icons.close,
-  box: { x: 0, y: 0, width: 2, height: 1 },
+  box: { x, y, width: 2, height: 1 },
   keepMenuOpen: true,
   onClick: (ctx, menu) => {
     delete menu.pinnedScale;
@@ -262,7 +272,7 @@ const MenuCloseControl = (): MenuControl => ({
 const PinControl = ({ x, y }: Vector): MenuControl => ({
   type: 'button',
   kind: 'pin',
-  label: 'here',
+  text: 'here',
   icon: icons.pin,
   box: { x, y, width: 5, height: 1 },
   keepMenuOpen: true,
@@ -282,7 +292,7 @@ const PinControl = ({ x, y }: Vector): MenuControl => ({
 const PosPinControl = ({ x, y }: Vector): MenuControl => ({
   type: 'button',
   kind: 'posPin',
-  label: 'stay',
+  text: 'stay',
   icon: icons.posPin,
   box: { x, y, width: 5, height: 1 },
   keepMenuOpen: true,
@@ -297,7 +307,7 @@ const PosPinControl = ({ x, y }: Vector): MenuControl => ({
 const ToolboxControl = ({ x, y }: Vector): MenuControl => ({
   type: 'button',
   kind: 'toolbox',
-  label: 'toolbox',
+  text: 'toolbox',
   icon: icons.toolbox,
   box: { x, y, width: 6, height: 1 },
   onClick: OpenToolboxMenu,
@@ -348,7 +358,7 @@ const ToolControl = (xy: Vector, kind: ToolKind): MenuControl => ({
     if (kind === 'spring') {
       ctx.menus.push({
         name: 'tool',
-        position: Vector.create(0, gridY + 6),
+        position: Vector.create(0, gridY + menuMargin * 2),
         controls: SpringControls(),
         pinnedPos: true,
         closeWhen: ctx => ctx.tool !== 'spring',
@@ -361,7 +371,7 @@ const ToolControl = (xy: Vector, kind: ToolKind): MenuControl => ({
 const ConsoleControl = ({ x, y }: Vector): MenuControl => ({
   type: 'button',
   kind: 'console',
-  label: 'console',
+  text: 'console',
   icon: icons.console,
   box: { x, y, width: 6, height: 1 },
   onClick: OpenConsoleMenu,
@@ -391,7 +401,7 @@ const SpringControls = (): MenuControl[] => [
   {
     type: 'checkbox',
     kind: 'checkbox',
-    label: 'from body centre',
+    text: 'from body centre',
     icon: ctx =>
       ctx.springFromBodyCentre ? icons.checkboxChecked : icons.checkbox,
     farIcon: true,
@@ -404,13 +414,9 @@ const SpringControls = (): MenuControl[] => [
 ];
 
 const ConsoleControls = (): MenuControl[] => [
-  MenuCloseControl(),
-  {
-    type: 'text',
-    kind: 'text',
-    box: { x: 0, y: 1, width: 20, height: 8 },
-    onClick: () => {},
-  },
+  { type: 'label', text: 'Console', box: { x: 0, y: 0, width: 18, height: 1 } },
+  MenuCloseControl(Vector.create(18, 0)),
+  { type: 'text', kind: 'console', box: { x: 0, y: 1, width: 20, height: 8 } },
 ];
 
 const OpenConsoleMenu = (ctx: Context) => {
