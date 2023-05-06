@@ -1,7 +1,7 @@
 import { Engine, Runner, Mouse, Common, Vector } from 'matter-js';
 import { Bodies, Composite, MouseConstraint, Composites } from 'matter-js';
 import { Events } from 'matter-js';
-import { Context, Menu, createTools } from './types';
+import { Context, Menu, drawTools } from './types';
 import { HandlePan, HandleZoom } from './zoom-pan';
 import { load, save } from './load-save';
 import { Render } from './render';
@@ -11,7 +11,8 @@ import {
   MenuPosition,
   OpenToolboxMenu,
 } from './context-menu';
-import { HandleCreateShapes } from './create-things';
+import { HandleDrawShapes } from './draw-things';
+import { HandlePlaceThings } from './place-things';
 import { HandleEraseShapes } from './erase-shapes';
 
 export const Interface = (canvas: HTMLCanvasElement) => {
@@ -142,7 +143,7 @@ const BeforeRender = (ctx: Context) => () => {
           ctx.mouseState = body && !body.isStatic ? 'drag' : 'pan';
         } else if (tool === 'pan') {
           ctx.mouseState = 'pan';
-        } else if (createTools.some(t => t === tool)) {
+        } else if (drawTools.some(t => t === tool)) {
           ctx.mouseState = [pos, 'draw'];
         }
       } else if (!leftClicked) {
@@ -172,9 +173,11 @@ const BeforeRender = (ctx: Context) => () => {
 };
 
 const AfterRender = (ctx: Context) => () => {
+  HandlePlaceThings(ctx);
+
   if (HandleMenu(ctx)) return;
 
-  HandleCreateShapes(ctx);
+  HandleDrawShapes(ctx);
   HandleEraseShapes(ctx);
 
   if (ctx.mouseConstraint.mouse.button) {

@@ -353,18 +353,7 @@ const ToolControl = (xy: Vector, kind: ToolKind): MenuControl => ({
   kind,
   icon: icons[kind],
   box: { x: xy.x, y: xy.y, width: 2, height: 1 },
-  onClick: ctx => {
-    ctx.tool = kind;
-    if (kind === 'spring') {
-      ctx.menus.push({
-        name: 'tool',
-        position: Vector.create(0, gridY + menuMargin * 2),
-        controls: SpringControls(),
-        pinnedPos: true,
-        closeWhen: ctx => ctx.tool !== 'spring',
-      });
-    }
-  },
+  onClick: OpenTool(kind),
   highlighted: ctx => ctx.tool === kind,
 });
 
@@ -393,7 +382,8 @@ const ToolboxControls = (): MenuControl[] => [
   ToolControl(Vector.create(10, 0), 'rectangle'),
   ToolControl(Vector.create(12, 0), 'circle'),
   ToolControl(Vector.create(14, 0), 'spring'),
-  PauseResumeControl(Vector.create(17, 0)),
+  ToolControl(Vector.create(16, 0), 'hinge'),
+  PauseResumeControl(Vector.create(19, 0)),
 ];
 
 const SpringControls = (): MenuControl[] => [
@@ -412,6 +402,42 @@ const SpringControls = (): MenuControl[] => [
     },
   },
 ];
+
+const HingeControls = (): MenuControl[] => [
+  MenuCloseControl(),
+  {
+    type: 'checkbox',
+    kind: 'checkbox',
+    text: 'from body centre',
+    icon: ctx =>
+      ctx.hingeFromBodyCentre ? icons.checkboxChecked : icons.checkbox,
+    farIcon: true,
+    box: { x: 0, y: 1, width: 10, height: 1 },
+    onClick: ctx => {
+      ctx.hingeFromBodyCentre = !ctx.hingeFromBodyCentre;
+      return 'keep';
+    },
+  },
+];
+
+const OpenTool = (kind: ToolKind) => (ctx: Context) => {
+  if (ctx.tool !== kind) {
+    const menuFactory = (controlFactory: () => MenuControl[]) =>
+      <Menu>{
+        name: 'tool',
+        position: Vector.create(0, gridY + menuMargin * 2),
+        controls: controlFactory(),
+        pinnedPos: true,
+        closeWhen: ctx => ctx.tool !== kind,
+      };
+    if (kind === 'spring') {
+      ctx.menus.push(menuFactory(SpringControls));
+    } else if (kind === 'hinge') {
+      ctx.menus.push(menuFactory(HingeControls));
+    }
+    ctx.tool = kind;
+  }
+};
 
 const ConsoleControls = (): MenuControl[] => [
   { type: 'label', text: 'Console', box: { x: 0, y: 0, width: 18, height: 1 } },

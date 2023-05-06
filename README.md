@@ -14,9 +14,9 @@ This is essentially an interface to the [Matter.js](https://brm.io/matter-js/) p
 
 **Planned features:**
 
+- create hinges
 - new scene control (and restore autoload)
 - tooltips
-- create hinges
 - create motors
 - non-rotate drag (use menu with checkbox for option)
 - dynamic cursor

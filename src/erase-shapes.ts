@@ -1,6 +1,7 @@
 import { Composite, Query, Vector, World } from 'matter-js';
 import { Context } from './types';
 
+//FIXME: doesn't erase orphaned constraints
 export const HandleEraseShapes = (ctx: Context) => {
   const { mouseConstraint, tool } = ctx;
   if (tool !== 'erase') return;

@@ -1,7 +1,6 @@
 import { Bounds, Mouse, Vector } from 'matter-js';
 import { Context } from './types';
 
-//FIXME: zoom is uncontrolled when paused
 export const HandleZoom = ({ mouseConstraint, scale, render }: Context) => {
   const { mouse } = mouseConstraint;
   const width = render.options.width ?? 0;
@@ -18,6 +17,7 @@ export const HandleZoom = ({ mouseConstraint, scale, render }: Context) => {
       scale.targetPos = Vector.clone(mouse.absolute);
     }
     scale.lastImpulse = now;
+    mouse.wheelDelta = 0;
   }
 
   if (Math.abs(scale.by - scale.target) < 0.01) return;

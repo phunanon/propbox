@@ -1,12 +1,12 @@
 import { Bodies, Composite, Constraint, Query, Vector, World } from 'matter-js';
-import { Context, createTools } from './types';
+import { Context, drawTools } from './types';
 
 export let springFromBodyCentre = false;
 
-export const HandleCreateShapes = (ctx: Context) => {
+export const HandleDrawShapes = (ctx: Context) => {
   const { mouseState, mouseConstraint } = ctx;
   if (!Array.isArray(mouseState) || mouseState[1] !== 'draw') return;
-  if (!createTools.some(t => t === ctx.tool)) return;
+  if (!drawTools.some(t => t === ctx.tool)) return;
 
   const { mouse } = mouseConstraint;
   const [pos] = mouseState;
@@ -76,14 +76,8 @@ const CreateThing = (ctx: Context, a: Vector, b: Vector) => {
     const body = createCircle(xy, radius);
     World.add(ctx.engine.world, body);
   } else if (ctx.tool === 'spring') {
-    const xyA = Vector.add(
-      ctx.render.bounds.min,
-      Vector.mult(Vector.create(a.x, a.y), scale)
-    );
-    const xyB = Vector.add(
-      ctx.render.bounds.min,
-      Vector.mult(Vector.create(b.x, b.y), scale)
-    );
+    const xyA = Vector.add(ctx.render.bounds.min, Vector.mult(a, scale));
+    const xyB = Vector.add(ctx.render.bounds.min, Vector.mult(b, scale));
     const [bodyA] = Query.point(Composite.allBodies(ctx.engine.world), xyA);
     const [bodyB] = Query.point(Composite.allBodies(ctx.engine.world), xyB);
     if (bodyA === bodyB || (!bodyA && !bodyB)) return;

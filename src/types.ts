@@ -1,8 +1,13 @@
 import { Engine, MouseConstraint, Render, Runner, Vector } from 'matter-js';
 
-export const createTools = ['rectangle', 'circle', 'spring'] as const;
-
-export type ToolKind = 'pan' | 'drag' | 'erase' | (typeof createTools)[number];
+export const drawTools = ['rectangle', 'circle', 'spring'] as const;
+export const placeTools = ['hinge'] as const;
+export type ToolKind =
+  | 'pan'
+  | 'drag'
+  | 'erase'
+  | (typeof drawTools)[number]
+  | (typeof placeTools)[number];
 
 type ControlKind =
   | 'close'
@@ -44,6 +49,7 @@ export type Context = {
   menus: Menu[];
   tool: ToolKind;
   springFromBodyCentre?: boolean;
+  hingeFromBodyCentre?: boolean;
 };
 
 export type Menu = {
@@ -80,7 +86,7 @@ export type Box = {
   height: number;
 };
 
-//TODO: settings f1de  layers f5fd  text f10d  select f065  hinge? f140  grid f00a  console f120
+//TODO: settings f1de  layers f5fd  text f10d  select f065  grid f00a  console f120
 //https://fontawesome.com/search?p=3&o=r&m=free&s=solid&f=classic
 export const icons: Record<ControlKind, string> = {
   pan: '\uf0b2',
@@ -89,6 +95,7 @@ export const icons: Record<ControlKind, string> = {
   rectangle: '\uf0c8',
   circle: '\uf111',
   spring: '\ue289',
+  hinge: '\uf140',
   close: '\uf00d',
   pin: '\uf08d',
   posPin: '\uf276',
