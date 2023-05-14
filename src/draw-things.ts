@@ -1,4 +1,5 @@
-import { Bodies, Composite, Constraint, Query, Vector, World } from 'matter-js';
+import { IBodyDefinition, Query, Vector } from 'matter-js';
+import { Composite, Constraint, Bodies, World } from 'matter-js';
 import { Context, drawTools } from './types';
 
 export let springFromBodyCentre = false;
@@ -102,10 +103,12 @@ const CreateThing = (ctx: Context, a: Vector, b: Vector) => {
   }
 };
 
-const style = { render: { lineWidth: 1, strokeStyle: '#000' } };
+const options: IBodyDefinition = {
+  render: { lineWidth: 1, strokeStyle: '#000' },
+};
 
 const createRectangle = (xy: Vector, wh: Vector) =>
-  Bodies.rectangle(xy.x + wh.x / 2, xy.y + wh.y / 2, wh.x, wh.y, style);
+  Bodies.rectangle(xy.x + wh.x / 2, xy.y + wh.y / 2, wh.x, wh.y, options);
 
 const createCircle = (xy: Vector, radius: number) =>
-  Bodies.circle(xy.x, xy.y, radius, style);
+  Bodies.circle(xy.x, xy.y, radius, options);

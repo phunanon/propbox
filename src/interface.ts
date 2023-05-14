@@ -1,7 +1,7 @@
 import { Engine, Runner, Mouse, Common, Vector } from 'matter-js';
 import { Bodies, Composite, MouseConstraint, Composites } from 'matter-js';
 import { Events } from 'matter-js';
-import { Context, Menu, drawTools } from './types';
+import { Context, drawTools } from './types';
 import { HandlePan, HandleZoom } from './zoom-pan';
 import { load, save } from './load-save';
 import { Render } from './render';
@@ -14,9 +14,10 @@ import {
 import { HandleDrawShapes } from './draw-things';
 import { HandlePlaceThings } from './place-things';
 import { HandleEraseShapes } from './erase-shapes';
+import { addGround, initialCtxScale } from './reset-ctx';
 
 export const Interface = (canvas: HTMLCanvasElement) => {
-  const engine = Engine.create(); //load() ?? Engine.create();
+  const engine = load() ?? Engine.create({ enableSleeping: true });
   const { world } = engine;
 
   const render = Render.create({
@@ -26,6 +27,7 @@ export const Interface = (canvas: HTMLCanvasElement) => {
       hasBounds: true,
       wireframes: false,
       background: '#87CEEB',
+      showSleeping: false,
     },
   });
 
@@ -47,42 +49,14 @@ export const Interface = (canvas: HTMLCanvasElement) => {
   // keep the mouse in sync with rendering
   render.mouse = mouse;
 
-  const stack = Composites.stack(
-    400,
-    20,
-    10,
-    4,
-    0,
-    0,
-    function (x: number, y: number) {
-      var sides = Math.round(Common.random(1, 8));
-      return Bodies.polygon(x, y, sides, Common.random(20, 50), {
-        render: { lineWidth: 2, strokeStyle: '#aaa' },
-      });
-    }
-  );
-
-  Composite.add(world, [
-    stack,
-    Bodies.rectangle(0, 8_000 + 600, 16_000, 16_000, {
-      isStatic: true,
-      render: { fillStyle: '#afa' },
-    }),
-  ]);
+  if (!world.bodies.length) addGround(world);
 
   Render.run(render);
   const runner = Runner.create();
   Runner.run(runner, engine);
 
   const ctx: Context = {
-    scale: {
-      min: 0.1,
-      max: 10,
-      by: 1,
-      target: 1,
-      lastImpulse: new Date().getTime(),
-      targetPos: { x: 0, y: 0 },
-    },
+    scale: { ...initialCtxScale },
     mouseState: 'rest',
     ...{ render, runner, engine, mouseConstraint, menus: [], tool: 'drag' },
   };

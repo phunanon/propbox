@@ -10,17 +10,17 @@ This is essentially an interface to the [Matter.js](https://brm.io/matter-js/) p
 - body drag, erase
 - play/pause
 - draggable context menus
-- create rectangles, circles, springs
+- create rectangles, circles, springs, hinges
+- scene reset
 
 **Planned features:**
 
-- create hinges
-- new scene control (and restore autoload)
+- control engine.timing.timeScale
+- scene ruler
 - tooltips
 - create motors
 - non-rotate drag (use menu with checkbox for option)
 - dynamic cursor
-- draggable menus
 - kinetic pan
 - specify and create polygon
 - draw polygon
@@ -47,3 +47,9 @@ This is essentially an interface to the [Matter.js](https://brm.io/matter-js/) p
 - change colours
 - change textures
 - create planes?
+
+**Known issues:**
+- a group of bodies connected by hinges either never collide with one another, or explode
+  - [Github issue](https://github.com/liabru/matter-js/issues/1222)
+- springs with both ends off-screen are not rendered
+  - [Github issue](https://github.com/liabru/matter-js/issues/1218)

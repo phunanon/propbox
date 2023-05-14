@@ -18,6 +18,7 @@ type ControlKind =
   | 'checkbox'
   | 'checkboxChecked'
   | 'console'
+  | 'newScene'
   | ToolKind;
 
 type MouseState =
@@ -104,4 +105,5 @@ export const icons: Record<ControlKind, string> = {
   checkbox: '\uf0c8',
   checkboxChecked: '\uf14a',
   console: '\uf121',
+  newScene: '\uf0e2',
 };

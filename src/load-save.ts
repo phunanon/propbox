@@ -37,17 +37,16 @@ const body2def = (body: Body): BodyDef => {
   //Physical structure
   const { vertices, parts, ...sansStructure } = sansPosition;
   //Properties
-  const { collisionFilter, isStatic, label, timeScale, type } = sansStructure;
+  const { collisionFilter, isStatic, label, timeScale, type, render } =
+    sansStructure;
   //The first member of parts is itself
   const partDefs = parts.slice(1).map(body2def);
   return {
     ...{ density, friction, frictionAir, frictionStatic, restitution },
     ...{ angle, position, velocity },
-    ...{
-      vertices: vertices.map(v => ({ x: v.x, y: v.y })),
-      partDefs,
-    },
-    ...{ collisionFilter, isStatic, label, position, timeScale, type },
+    vertices: vertices.map(v => ({ x: v.x, y: v.y })),
+    partDefs,
+    ...{ collisionFilter, isStatic, label, position, timeScale, type, render },
   };
 };
 
@@ -66,11 +65,14 @@ const def2body = (def: BodyDef): Body => {
   //Physical structure
   const { vertices, partDefs, ...sansStructure } = sansPosition;
   //Properties
-  const { collisionFilter, isStatic, label, timeScale, type } = sansStructure;
+  const { collisionFilter, isStatic, label, timeScale, type, render } =
+    sansStructure;
   const body = Body.create({
     ...{ density, friction, frictionAir, frictionStatic, restitution },
     ...{ angle, position, velocity },
-    ...{ collisionFilter, isStatic, label, timeScale, type },
+    vertices: vertices.map(v => Vector.create(v.x, v.y)),
+    parts: partDefs.map(def2body),
+    ...{ collisionFilter, isStatic, label, timeScale, type, render },
   });
   Body.setParts(body, partDefs.map(def2body));
   return body;

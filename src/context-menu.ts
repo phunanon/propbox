@@ -1,6 +1,7 @@
 import { Vector } from 'matter-js';
 import { Box, Context, Menu, MenuControl, ToolKind, icons } from './types';
 import { PutDomControls } from './dom-controls';
+import { ResetCtx } from './reset-ctx';
 
 const fontSize = 16;
 const gridY = fontSize * 2;
@@ -367,11 +368,21 @@ const ConsoleControl = ({ x, y }: Vector): MenuControl => ({
   hidden: ctx => !!ctx.menus.find(m => m.name === 'console'),
 });
 
+const NewSceneControl = ({ x, y }: Vector): MenuControl => ({
+  type: 'button',
+  kind: 'newScene',
+  text: 'new scene',
+  icon: icons.newScene,
+  box: { x, y, width: 6, height: 1 },
+  onClick: ResetCtx,
+});
+
 const SceneControls = (): MenuControl[] => [
   PinControl(Vector.create(0, 0)),
   PosPinControl(Vector.create(5, 0)),
   ToolboxControl(Vector.create(0, 1)),
   ConsoleControl(Vector.create(0, 1)),
+  NewSceneControl(Vector.create(0, 2)),
 ];
 
 const ToolboxControls = (): MenuControl[] => [

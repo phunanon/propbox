@@ -47,6 +47,7 @@ const CreateThing = (ctx: Context, pos: Vector) => {
     });
     //Make bodies not collide with one another
     //FIXME: this isn't powerful enough, as it makes either everything not collide, or using centre, causes collisions
+    //https://github.com/liabru/matter-js/issues/1222
     if (top && bottom) {
       const groupA = top.collisionFilter.group ?? 0;
       const groupB = bottom.collisionFilter.group ?? 0;

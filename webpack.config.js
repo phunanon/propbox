@@ -17,6 +17,6 @@ module.exports = {
   },
   output: {
     filename: 'js.js',
-    path: path.resolve(__dirname, 'www'),
+    path: path.resolve(__dirname, 'docs'),
   },
 };
